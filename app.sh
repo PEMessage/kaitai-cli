@@ -9,7 +9,8 @@ help() {
 cat << EOF
 Kaitai Struct CLI Tool Helper
 
-Usage: $0 <command> [options]
+Usage: kaitai-cli <command> [options]
+       docker run --rm -it -v "$(pwd):/share" kaitai-cli <subcmd> [options]
 
 Commands:
   ksv      - Visualize Kaitai Struct files (generates diagrams)
