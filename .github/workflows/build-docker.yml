@@ -1,0 +1,52 @@
+name: Build and Push Docker Image
+
+on:
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest
+
+      - name: Build Docker image
+        run: |
+          chmod +x build.sh
+          ./build.sh
+
+      - name: Tag and push image
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          IMAGE_ID=$(docker images --format "{{.Repository}}:{{.Tag}}" | head -1)
+          echo "Built image: $IMAGE_ID"
+          
+          echo "$TAGS" | while read -r tag; do
+            docker tag $IMAGE_ID $tag
+            docker push $tag
+          done
